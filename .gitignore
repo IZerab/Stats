@@ -1,4 +1,5 @@
 # Default ignored files
 /shelf/
 /workspace.xml
-/communities.data
+/communities.csv
+/names.csv

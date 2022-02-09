@@ -1,0 +1,43 @@
+# Statistic exercises for week 5
+# author Lorenzo Beltrame
+
+# libs
+library(languageserver)
+library(igraph)
+
+set.seed(42)
+
+# initialising variables
+n <- 10000
+p <- 0.005
+subgraph_size <- 100
+
+
+# generate the population graph
+graph <- sample_gnp(n=n, p=p, directed = FALSE, loops = FALSE)
+
+# sampling from the graph
+# generate the vector containing the number of the vertices
+sampled_vertices_idx <- sample(x = 1:n,size = subgraph_size, replace = FALSE)
+
+
+# create the first subsample
+graph_0 <- induced_subgraph(graph, sampled_vertices_idx)
+V_0_star <- V(graph_0)
+neighbouring_0 <- neighbors(graph, V_0_star)
+print(neighbouring_0)
+stop()
+
+# get vertices
+# add the incident vertices to the graph
+V_1_star <- incident(graph, sampled_vertices)
+print(V_1_star)
+
+# get the vertices
+vertices_1 <- V(V_1_star)
+# add the incident vertices to the graph
+V_2_star <- incident(graph, vertices_1)
+print(V_1_star)
+
+
+

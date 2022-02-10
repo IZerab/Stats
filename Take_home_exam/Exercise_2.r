@@ -240,6 +240,7 @@ cat(paste0("True median = ", median(x)))
 cat("\n")
 
 # Try different values for b
+
 list_b <- c(0.5, 0.7, 1, 2, 3, 4, 5, 6, 7, 8)
 propose_test_relase <- list()
 a <- a_fs(x, m)

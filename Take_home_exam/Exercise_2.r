@@ -3,9 +3,10 @@
 # standard libraries
 library(ggplot2)
 library(Rmisc)
+library(VGAM)
 library(jmuOutlier)
 
-set.seed(22)
+set.seed(42)
 
 # my functions
 a_f <- function(x, k, m) {
@@ -29,7 +30,7 @@ a_f <- function(x, k, m) {
     ls <- numeric(length(indices))
 
     # For each set of indices
-    for (i in 1:length(indices)) {
+    for (i in seq_len(length(indices))) {
         # Extract indices
         ind1 <- indices[[i]][1]
         ind2 <- indices[[i]][2]
@@ -48,18 +49,18 @@ a_f <- function(x, k, m) {
     return(result)
     }
 
-a_fs <- function(x,m){
+a_fs <- function(x, m) {
     # This function finds the smallest k that follows a_fs > b
     # Number of instances
     n <- length(x)
 
     # To store computations
-    result <- numeric(n+1)
+    result <- numeric(n + 1)
     names(result) <- paste0("k=", 0:n)
 
     # Maximum change in median for each k number of changes
-    for(k in 0:n){
-    result[k+1] <- a_f(x, k, m)
+    for (k in 0:n) {
+        result[k + 1] <- a_f(x, k, m)
     }
 
     # Return results
@@ -72,19 +73,19 @@ d_f <- function(a, b) {
     return(result - 1)
     }
 
-propose_test_release <- function(x, a, b, m,size=1000) {
+propose_test_release <- function(x, a, b, m, size=1000) {
     # Initialize result
     result <- numeric(size)
 
     # For each iteration
-    w <- rlaplace(size)
+    w <- rlaplace(n = size) # nolint
     d <- d_f(a, b)
 
     # Left-hand side and right-hand side
-    left <- d + w/eps
-    right <- log(2/delta) / (2*eps)
-    output <- median(x) + (b/eps) * rlaplace(size)
-    result <- ifelse(left<right, NA, output)
+    left <- d + w / epsilon
+    right <- log(2 / delta) / (2 * epsilon)
+    output <- median(x) + (b / epsilon) * rlaplace(size) # nolint
+    result <- ifelse(left < right, NA, output)
     return(result)
     }
 
@@ -93,13 +94,13 @@ local_sensitivity <- function(x) {
     # sort x in order
     x <- sort(x)
 
-    # Number of instances observed
+    # Number of instances considered
     n <- length(x)
 
     # compute the point of the median
     midpoint <- ceiling(n / 2)
 
-    # Compute the local sensitivity 
+    # Compute the local sensitivity
     temp <- x[midpoint + 1] - x[midpoint]
     temp1 <- x[midpoint] - x[midpoint - 1]
     result <- max(temp, temp1)
@@ -115,7 +116,7 @@ inverse_local_sensitivity <- function(x, m) {
     x <- sort(x)
     n <- length(x)
 
-    # Since n is odd, the midpoint is defined as
+    # Since n is odd, the middle point is:
     mid <- ceiling(n / 2)
 
     # Initialise the output
@@ -141,8 +142,8 @@ inverse_local_sensitivity <- function(x, m) {
         }
     }
 
-    # Return results
     return(result)
+    
     }
 
 get_indices <- function(mid, max_entries_changed) {
@@ -189,12 +190,12 @@ n <- 101
 max_value <- 50
 x <- sample(0:max_value, size = n, replace = TRUE, prob = 1:(max_value + 1))
 
+# plot the data sampled
+dev.new()
+hist(x)
+
 # True median
 cat(paste0("True median = ", median(x), "\n"))
-
-# Plot the histogram
-vanilla_hist <- hist(x)
-
 
 # Compute the inverse local sensitivity
 inverse_local <- inverse_local_sensitivity(x, max_value)
@@ -204,9 +205,10 @@ print(inverse_local)
 q <- pmf_z(inverse_local, epsilon)
 
 # Plot pmf and actual median
+dev.new()
 pmf_plot <- plot(0:max_value, q, type = "b", pch = 4, xlab = "Z", ylab = "prob")
 abline(v = median(x), lty = 2, col = "#2c8d3c")
-text(paste0("True median = ", median(x)), x = 0, y = max(q), adj = c(0, 1))
+text(paste0("True median = ", median(x)), x = 3, y = max(q), adj=c(0,1))
 
 
 # Sample 1000 values according to pmf of Z
@@ -218,78 +220,80 @@ med_ils <- median_to_publish
 
 # Plot histogram of published medians
 breaks <- seq(min(median_to_publish), max(median_to_publish), length.out = 10)
-h <- hist(median_to_publish, xlim=c(0, 50), breaks=breaks,
-main = "Inverse local sensitivity", xlab = "Median to publish")
-text(paste0(
-    "True median = ", 
-    median(x)), 
-    x = 0, 
-    y = max(h$counts), 
-    adj = c(0, 1))
+dev.new()
+h <- hist(median_to_publish, xlim = c(0, 50), breaks = breaks,
+    main = "Inverse local sensitivity", xlab = "Median to publish")
+
+text(paste0("True median = ", median(x)), x = 0.1, y = max(h$counts),adj = c(-0.5, 1))
+
 
 # My proposal for a test release
-
 n <- 101
 m <- 50
-eps <- 1
+epsilon <- 1
 delta <- 0.01
+prop_test_relase <- list()
+
 x <- sample(0:m, size = n, replace = TRUE, prob = 1:(m + 1))
 # True median
 cat(paste0("True median = ", median(x)))
+cat("\n")
 
 # Try different values for b
-bs <- c(1, 2, 3, 4, 5, 6)
-ptr <- list()
+list_b <- c(0.5, 0.7, 1, 2, 3, 4, 5, 6, 7, 8)
+propose_test_relase <- list()
 a <- a_fs(x, m)
+
 # Compute propose-test-release
-
-for(i in 1:length(bs)){
-b <- bs[i]
-ptr[[i]] <- propose_test_release(x, a, b, m)
+for (i in seq_len(length(list_b))) {
+    b <- list_b[i]
+    prop_test_relase[[i]] <- propose_test_release(x, a, b, m)
 }
 
-for(t in paste0("b=", bs, ": ", 100*sapply(lapply(ptr, is.na), mean), "% NA")){print(t)}
+# print the percentage of NaN in the proposed test released
+cat("Percentage of NaNs: \n")
+percentage <- 100 * sapply(lapply(prop_test_relase, is.na), mean)
+print_temp <- paste0("b=", list_b, ": ", percentage, "% are NaNs")
 
-# Plot results
-xmin <- min(0, sapply(ptr, min, na.rm = TRUE))
-xmax <- max(m, sapply(ptr, max, na.rm = TRUE))
+for (t in print_temp) {
+      print(t)
+}
+
+# Plot the results
+xmin <- min(0, sapply(prop_test_relase, min, na.rm = TRUE))
+xmax <- max(m, sapply(prop_test_relase, max, na.rm = TRUE))
 breaks <- seq(xmin, xmax, length.out = 80)
-maxcounts <- numeric(length(bs))
-for(i in 1:length(bs)) {
-b <- bs[i]
-p <- ptr[[i]]
-h <- hist(p, breaks = breaks, plot = FALSE)
-maxcounts[i] <- max(h$count)
+maxcounts <- numeric(length(list_b))
+for (i in seq_len(length(list_b))) {
+    b <- list_b[i]
+    p <- prop_test_relase[[i]]
+    h <- hist(p, breaks = breaks, plot = FALSE)
+    maxcounts[i] <- max(h$count)
+    }
+    ymax <- max(maxcounts)
+    par(mfrow = c(3, 1), mar = c(2, 2, 1, 1))
+    for (i in seq_len(length(list_b))) {
+    b <- list_b[i]
+    p <- prop_test_relase[[i]]
+    
+    
+    dev.new()
+    hist(
+        p,
+        xlim = c(0, 100),
+        ylim = c(0, ymax),
+        breaks = breaks,
+        xlab = "Median to publish",
+        main = ""
+        )
+    
+    abline(v=median(x), col="blue")
+    
+    text(labels = paste0("True median = ", median(x)), x = 3, y = ymax, adj=c(-1.5,1))
+    
+    mtext(paste0("b=", list_b[i]) )
+    
+    
 }
-ymax <- max(maxcounts)
-par(mfrow = c(3, 1), mar = c(2, 2, 1, 1))
-for (i in 1:3) {
-b <- bs[i]
-p <- ptr[[i]]
 
-hist(
-    p,
-    xlim = c(0, xmax),
-    ylim = c(0, ymax),
-    breaks = breaks,
-    xlab = "Median to publish",
-    main = "")
-
-text(paste0("True median = ", median(x)), x = 0, y = ymax, adj = c(0, 1))
-mtext(paste0("b=", bs[i]))
-}
-
-par(mfrow=c(3,1), mar = c(2, 2, 1, 1))
-for(i in 4:6) {
-b <- bs[i]
-p <- ptr[[i]]
-hist(
-    p,
-    xlim = c(0, xmax),
-    ylim = c(0, ymax),
-    breaks = breaks,
-    xlab = "Median to be published",
-    main = "")
-text(paste0("True median = ", median(x)), x = 0, y = ymax, adj = c(0, 1))
-mtext(paste0("b=", bs[i]))
-}
+#par(mfrow = c(3, 1), mar = c(2, 2, 1, 1))

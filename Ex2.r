@@ -6,7 +6,7 @@ library(glmnet)
 library(selectiveInference)
 
 # set the seed
-set.seed(200)
+set.seed(42)
 
 # set working directory
 setwd("C:/Users/beltr/Documents/GitHub/Stats")

@@ -1,4 +1,4 @@
-# Lorenzo Beltrame's submission for the 2021WS Stat take home project. 08/02/22
+# Lorenzo Beltrame's submission for the 2021WS Stats take home project. 08/02/22
 
 # standard libraries
 library(ggplot2)
@@ -7,10 +7,8 @@ library(Rmisc)
 
 
 # number of samples
-n <- 1000
-
-compute_power <- function(alpha, n=100, mmax=6) {
-    # X-Axis spacing
+compute_power <- function(alpha, n=1000, mmax=6) {
+    # X-Axis spacing (the fixed value of the statistic)
     xx <- seq(0, mmax, length.out = n)
 
     # Compute the power for A and Corrected p-value
@@ -36,7 +34,7 @@ compute_power <- function(alpha, n=100, mmax=6) {
 # run the experiments!
 
 # values of alpha chosen
-alphas <- c(0.1, 0.05, 0.01, 0.001)
+alphas <- c(0.1, 0.05, 0.01, 0.001, 0.000001, 0.000000001)
 values <- list()
 plots <- list()
 
